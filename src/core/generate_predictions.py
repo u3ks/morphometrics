@@ -22,22 +22,11 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score, make_scorer
 
 coredir = '/data/uscuni-eurofab-overture/'
 
-def get_level_cut(mapping_level, v = 'v3'):
+def get_level_cut(mapping_level, v = 'v10'):
     
     cluster_mapping = pd.read_parquet(f'/data/uscuni-ulce/processed_data/clusters/cluster_mapping_{v}.pq')
 
-    if mapping_level == 3:
-        level_cut = cluster_mapping[3].astype(str)
-        level_cut[level_cut == '2'] = '8'
-    
-    elif mapping_level == 4:
-        # # assign outliers to the industrial cluster
-        level_cut = cluster_mapping[4].astype(str)
-        level_cut[level_cut == '3'] = '15'
-        level_cut[level_cut == '4'] = '15'
-        level_cut[level_cut == '10'] = '15'
-        
-    return level_cut
+    return cluster_mapping[4]
 
 
 def read_train_test(train_test_iteration, mapping_level, sample_size):
@@ -67,47 +56,43 @@ def read_train_test(train_test_iteration, mapping_level, sample_size):
     assert y.final_without_noise.isna().sum() == 0
 
     X_resampled, y_resampled = X_train, y.final_without_noise
-    if 'source' in X_resampled.columns:
-        # we can do this because of random forest splitting
-        source_factorizer = X_resampled['source'].factorize()
-        X_resampled['source'] = source_factorizer[0]
+
     print(y_resampled.value_counts())
 
     return X_resampled, y_resampled
 
-
-def get_cluster_names(mapping_level):
     
-    if mapping_level == 3:
-        cluster_names = {
-        '1': 'Central Urban Developments',
-        '2': 'Large Scale Outliers',
-         '3': 'Dense Urban Developments',
-         '4': 'Street-aligned Developments',
-         '5': 'Sparse Rural Development',
-         '6': 'Linear Road Network Developments',
-         '7': 'Sparse Road Network Developments',
-         '8': 'Large Scale Developments'
-        }
+def get_cluster_names(mapping_level):
 
+    if mapping_level == 2:
+        cluster_names = {
+     1: 'Sparse Street Network',
+     2: 'Dense Street Network',
+}
+
+    elif mapping_level == 3:
+        cluster_names ={
+    1: 'Large Scale Developments',
+    2: 'Non-urban Developments',
+    3: 'Large Interconnected Blocks',
+    4: 'Structured Developments'
+    
+}
+
+    
     elif mapping_level == 4:
-        # # assign outliers to the industrial cluster
-        cluster_names = {'1': 'Dense Connected Developments',
-         '2': 'Large Interconnected Blocks',
-         '3': 'Extensive Courtyard Complexes',
-         '4': 'Massive Connected Aggregations',
-         '5': 'Dense Standalone Buildings',
-         '6': 'Compact Development',
-         '7': 'Cul-de-Sac Layout',
-         '8': 'Aligned Winding Streets',
-         '9': 'Sparse Rural Development',
-         '10': 'Large Wide-Spaced Complexes',
-         '11': 'Dispersed Linear Development',
-         '12': 'Linear Development',
-         '13': 'Sparse Open Layout',
-         '14': 'Sparse Road-Linked Development',
-         '15': 'Large Utilitarian Development',
-         '16': 'Extensive Wide-Spaced Developments'}
+        cluster_names = {
+    1: "Wide-space Developments",
+    2: "Large Utilitarian Developments",
+    3: "Linear Developments",
+    4: "Open Layout",
+    5: "Aligned Winding Streets",
+    6: "Large Interconnected Blocks",
+    7: "Dense Standalone Buildings",
+    8: "Dense Adjacent Buildings"
+}
+    else:
+        raise Exception('Not named')
 
     return cluster_names
 
@@ -125,11 +110,6 @@ def score_predictions(train_test_iteration, mapping_level, model):
     assert (X_test.index == y_test.index).all()
     
     print(y_test.final_without_noise.map(cluster_names).value_counts())
-
-    if 'source' in X_test.columns:
-        # we can do this because of random forest splitting
-        factorizer_dict = pd.Series(np.arange(len(source_factorizer[1])), source_factorizer[1].values, ).to_dict()
-        X_test['source'] = X_test['source'].map(factorizer_dict)
 
     ## predictions
     predictions = model.predict(X_test)
@@ -155,20 +135,24 @@ def score_predictions(train_test_iteration, mapping_level, model):
 def train_model(train_test_iteration, mapping_level, sample_size):
 
     X_resampled, y_resampled = read_train_test(train_test_iteration, mapping_level, sample_size)
-
     
     from sklearn.ensemble import HistGradientBoostingClassifier
+
+    if 'source' in X_resampled.columns:
+        categorical_features = ['source']
+    else:
+        categorical_features = None
     
     model = HistGradientBoostingClassifier(random_state=123, verbose=1,
                                                 learning_rate = 0.03,
-                                                max_depth = None, 
+                                                categorical_features=categorical_features,
+                                                # max_depth = None, 
                                                 max_iter = 120, 
-                                                max_leaf_nodes=None,
-                                                max_features=.5
+                                                # max_leaf_nodes=None,
+                                                # max_features=.5
                                                )
     model.fit(X_resampled, y_resampled)
     print(model.score(X_resampled, y_resampled))
-
 
     
     score_predictions(train_test_iteration, mapping_level, model)
@@ -176,7 +160,7 @@ def train_model(train_test_iteration, mapping_level, sample_size):
 
 if __name__ == '__main__':
 
-    mapping_level = 3
+    mapping_level = 4
     sample_size = 600_000
     
     for train_test_iteration in range(1, 8):
