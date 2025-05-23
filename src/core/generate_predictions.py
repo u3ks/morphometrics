@@ -20,16 +20,15 @@ from sklearn.datasets import make_moons
 from sklearn import model_selection
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, make_scorer
 
-coredir = '/data/uscuni-eurofab-overture/'
 
 def get_level_cut(mapping_level, v = 'v10'):
     
     cluster_mapping = pd.read_parquet(f'/data/uscuni-ulce/processed_data/clusters/cluster_mapping_{v}.pq')
 
-    return cluster_mapping[4]
+    return cluster_mapping[mapping_level]
 
 
-def read_train_test(train_test_iteration, mapping_level, sample_size):
+def read_train_test(coredir, train_test_iteration, mapping_level, sample_size):
     
     X_train = pd.read_parquet(f'{coredir}processed_data/train_test_data/training_data{train_test_iteration}.pq')
     y = pd.read_parquet(f'{coredir}processed_data/train_test_data/training_labels{train_test_iteration}.pq')
@@ -64,35 +63,34 @@ def read_train_test(train_test_iteration, mapping_level, sample_size):
     
 def get_cluster_names(mapping_level):
 
-    if mapping_level == 2:
+    if mapping_level == 1:
         cluster_names = {
-     1: 'Sparse Street Network',
-     2: 'Dense Street Network',
+     1: 'Incoherent Fabric',
+     2: 'Coherent Fabric',
+}
+
+    elif mapping_level == 2:
+        cluster_names ={
+    1: 'Incoherent Large-Scale Fabric',
+    2: 'Incoherent Small-Scale Fabric',
+    3: 'Coherent Interconnected Fabric',
+    4: 'Coherent Dense Fabric'
+    
 }
 
     elif mapping_level == 3:
-        cluster_names ={
-    1: 'Large Scale Developments',
-    2: 'Non-urban Developments',
-    3: 'Large Interconnected Blocks',
-    4: 'Structured Developments'
-    
-}
-
-    
-    elif mapping_level == 4:
         cluster_names = {
-    1: "Wide-space Developments",
-    2: "Large Utilitarian Developments",
-    3: "Linear Developments",
-    4: "Open Layout",
-    5: "Aligned Winding Streets",
-    6: "Large Interconnected Blocks",
-    7: "Dense Standalone Buildings",
-    8: "Dense Adjacent Buildings"
+    1: "Incoherent Large-Scale Homogeneous Fabric",
+    2: "Incoherent Large-Scale Heterogeneous Fabric",
+    3: "Incoherent Small-Scale Linear Fabric",
+    4: "Incoherent Small-Scale Sparse Fabric",
+    5: "Incoherent Small-Scale Compact Fabric",
+    6: "Coherent Interconnected Fabric",
+    7: "Coherent Dense Disjoint Fabric",
+    8: "Coherent Dense Adjacent Fabric"
 }
     else:
-        raise Exception('Not named')
+        raise Exception(f'Clusters at level {mapping_level} not named')
 
     return cluster_names
 
@@ -132,9 +130,9 @@ def score_predictions(train_test_iteration, mapping_level, model):
     f1s.to_csv(f'{coredir}processed_data/results/class_f1s_{mapping_level}_{train_test_iteration}.csv')
     
 
-def train_model(train_test_iteration, mapping_level, sample_size):
+def train_model(coredir, train_test_iteration, mapping_level, sample_size):
 
-    X_resampled, y_resampled = read_train_test(train_test_iteration, mapping_level, sample_size)
+    X_resampled, y_resampled = read_train_test(core_dir, train_test_iteration, mapping_level, sample_size)
     
     from sklearn.ensemble import HistGradientBoostingClassifier
 
@@ -160,9 +158,10 @@ def train_model(train_test_iteration, mapping_level, sample_size):
 
 if __name__ == '__main__':
 
-    mapping_level = 4
+    mapping_level = 3
     sample_size = 600_000
-    
+    coredir = '/data/uscuni-eurofab-overture/'
+
     for train_test_iteration in range(1, 8):
-        train_model(train_test_iteration, mapping_level, sample_size)
+        train_model(coredir, train_test_iteration, mapping_level, sample_size)
 
