@@ -130,7 +130,7 @@ def score_predictions(train_test_iteration, mapping_level, model):
     f1s.to_csv(f'{coredir}processed_data/results/class_f1s_{mapping_level}_{train_test_iteration}.csv')
     
 
-def train_model(coredir, train_test_iteration, mapping_level, sample_size):
+def train_model(core_dir, train_test_iteration, mapping_level, sample_size):
 
     X_resampled, y_resampled = read_train_test(core_dir, train_test_iteration, mapping_level, sample_size)
     
@@ -160,8 +160,8 @@ if __name__ == '__main__':
 
     mapping_level = 3
     sample_size = 600_000
-    coredir = '/data/uscuni-eurofab-overture/'
+    core_dir = '/data/uscuni-eurofab-overture/'
 
     for train_test_iteration in range(1, 8):
-        train_model(coredir, train_test_iteration, mapping_level, sample_size)
+        train_model(core_dir, train_test_iteration, mapping_level, sample_size)
 
