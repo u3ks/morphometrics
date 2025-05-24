@@ -95,11 +95,11 @@ def get_cluster_names(mapping_level):
     return cluster_names
 
 
-def score_predictions(train_test_iteration, mapping_level, model):
+def score_predictions(core_dir, train_test_iteration, mapping_level, model):
     
     level_cut = get_level_cut(mapping_level)
-    X_test = pd.read_parquet(f'{coredir}processed_data/train_test_data/testing_data{train_test_iteration}.pq')
-    y_test = pd.read_parquet(f'{coredir}processed_data/train_test_data/testing_labels{train_test_iteration}.pq')
+    X_test = pd.read_parquet(f'{core_dir}processed_data/train_test_data/testing_data{train_test_iteration}.pq')
+    y_test = pd.read_parquet(f'{core_dir}processed_data/train_test_data/testing_labels{train_test_iteration}.pq')
     y_test['final_without_noise'] = y_test['final_without_noise'].map(level_cut.to_dict())
 
     cluster_names = get_cluster_names(mapping_level)
@@ -126,8 +126,8 @@ def score_predictions(train_test_iteration, mapping_level, model):
 
     print(overall_acc)
     print(f1s)
-    overall_acc.to_csv(f'{coredir}processed_data/results/overall_acc_{mapping_level}_{train_test_iteration}.csv')
-    f1s.to_csv(f'{coredir}processed_data/results/class_f1s_{mapping_level}_{train_test_iteration}.csv')
+    overall_acc.to_csv(f'{core_dir}processed_data/results/overall_acc_{mapping_level}_{train_test_iteration}.csv')
+    f1s.to_csv(f'{core_dir}processed_data/results/class_f1s_{mapping_level}_{train_test_iteration}.csv')
     
 
 def train_model(core_dir, train_test_iteration, mapping_level, sample_size):
@@ -153,14 +153,14 @@ def train_model(core_dir, train_test_iteration, mapping_level, sample_size):
     print(model.score(X_resampled, y_resampled))
 
     
-    score_predictions(train_test_iteration, mapping_level, model)
+    score_predictions(core_dir, train_test_iteration, mapping_level, model)
 
 
 if __name__ == '__main__':
 
     mapping_level = 3
     sample_size = 600_000
-    core_dir = '/data/uscuni-eurofab-overture/'
+    core_dir = '/data/uscuni-eurofab/'
 
     for train_test_iteration in range(1, 8):
         train_model(core_dir, train_test_iteration, mapping_level, sample_size)
